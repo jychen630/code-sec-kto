@@ -1,0 +1,3 @@
+*.yaml
+outputs/*
+__pycache__
