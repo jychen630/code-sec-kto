@@ -1,0 +1,2 @@
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+python train.py loss=kto model=codellama7b datasets=[bigvul] exp_name=first_test ++cache_dir=/local/nlp/junyao/huggingface ++model.name_or_path=codellama/CodeLlama-7b-hf
