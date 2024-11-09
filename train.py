@@ -35,7 +35,7 @@ import socket
 from typing import Optional, Set
 import resource
 from models import AutoModelForCausalLMWithValueHead
-from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed
+from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, BitsAndBytesConfig, AutoConfig
 import torch.distributed as dist
 import numpy as np
 import random
@@ -85,6 +85,20 @@ def worker_main(rank: int, world_size: int, config: DictConfig, tokenizer: AutoT
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def main(config: DictConfig):
     """Main entry point for training. Validates config, creates/initializes model(s), and kicks off worker process(es)."""
+    
+    # # Add these lines right after the function starts
+    # model_config = AutoConfig.from_pretrained(config.model.name_or_path)
+    # max_allowed_length = model_config.max_position_embeddings
+    # if config.model.max_length > max_allowed_length:
+    #     print(f'WARNING: Requested max_length {config.model.max_length} exceeds model maximum {max_allowed_length}')
+    #     print(f'Setting max_length to {max_allowed_length}')
+    #     config.model.max_length = max_allowed_length
+    
+    # if config.model.max_prompt_length >= config.model.max_length:
+    #     print(f'WARNING: max_prompt_length {config.model.max_prompt_length} must be less than max_length {config.model.max_length}')
+    #     config.model.max_prompt_length = config.model.max_length - 256  # Leave room for completion
+
+
     # Resolve hydra references, e.g. so we don't re-compute the run directory
     OmegaConf.resolve(config)
 
@@ -128,15 +142,32 @@ def main(config: DictConfig):
         reference_kwargs['device_map'] = 'balanced'
 
     print('building policy')
+    bnb_config_4bit = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        # llm_int8_threshold=6.0,  # Lower threshold for more aggressive quantization
+        # llm_int8_has_fp16_weight=True
+        )
+    bnb_config_8bit = BitsAndBytesConfig(
+        load_in_8bit=True,
+        llm_int8_threshold=6.0,
+        llm_int8_has_fp16_weight=True
+    )   
+    bnb_config = bnb_config_4bit 
     model_class = AutoModelForCausalLMWithValueHead if config.loss.name == 'ppo' else AutoModelForCausalLM
-    policy = model_class.from_pretrained(
-        config.model.name_or_path, low_cpu_mem_usage=True, use_flash_attention_2=config.model.use_flash_attention, **policy_kwargs)
+    
+    policy = model_class.from_pretrained(#quantization_config=bnb_config, 
+        config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **policy_kwargs)
+    policy.gradient_checkpointing_enable() #  my change
     disable_dropout(policy)
 
     if config.loss.use_reference_model:
         print('building reference model')
-        reference_model = AutoModelForCausalLM.from_pretrained(
-            config.model.name_or_path, low_cpu_mem_usage=True, use_flash_attention_2=config.model.use_flash_attention, **reference_kwargs)
+        reference_model = AutoModelForCausalLM.from_pretrained(#quantization_config=bnb_config,
+            config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **reference_kwargs)
+        reference_model.gradient_checkpointing_enable() # my change
         disable_dropout(reference_model)
     else:
         reference_model = None
@@ -214,9 +245,9 @@ def main(config: DictConfig):
         n_epochs=(1 if config.n_eval_examples is None else None),
         **data_iterator_kwargs
     )
-    
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "0,3" # ineffective
     if config.use_fsdp:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "3,4,7" 
+        os.environ["CUDA_VISIBLE_DEVICES"] = "3,4,7"
         world_size = torch.cuda.device_count()
         print('starting', world_size, 'processes for FSDP training')
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -229,4 +260,5 @@ def main(config: DictConfig):
 
 
 if __name__ == '__main__':
+     
     main()
