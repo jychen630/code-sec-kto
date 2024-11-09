@@ -14,7 +14,117 @@ accelerate launch \
 python train.py loss=kto-simple model=codellama7b datasets=[ultrabin,shp] exp_name=first_test ++cache_dir=/local/nlp/junyao/huggingface ++model.name_or_path=codellama/CodeLlama-7b-hf ++model.load_from=/local/nlp/junyao/huggingface/hub/models--codellama--CodeLlama-7b-hf ++lr=5e-6 ++loss.beta=0.1
 
 
-python train.py loss=kto model=codellama7b datasets=[ultrabin] exp_name=first_test ++cache_dir=/local/nlp/junyao/huggingface ++model.name_or_path=codellama/CodeLlama-7b-hf  ++lr=5e-6 ++loss.beta=0.1 ++model.batch_size=1 
+pkill -9 -u $USER python && python train.py loss=kto model=codellama7b datasets=[ultrabin] exp_name=first_test ++cache_dir=/local/nlp/junyao/huggingface ++model.name_or_path=codellama/CodeLlama-7b-hf  ++lr=5e-6 ++loss.beta=0.1 ++model.batch_size=1 
 
 
 pkill -9 -u $USER python
+HF_token=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
+
+
+When find ineffective changes, clean cache
+
+
+This line is slow: 
+conda install pytorch==2.1.1 pytorch-cuda=12.1 -c pytorch -c nvidia
+
+
+cuda error might be related to the data indexing
+https://discuss.pytorch.org/t/runtimeerror-cuda-error-device-side-assert-triggered-index-out-of-bounds-failed/87827/6
+
+using bitsandbytes for quantization temporarily suppress the cuda out of memory error
+
+
+
+==================================================================================
+4 & 5 crafted prompts words
+def get_ultrabin(split: str, human_prefix: str, human_suffix: str, assistant_prefix: str, assistant_suffix: str) -> Dataset:
+    """
+    Load the Ultrafeedback (binarized) dataset from Huggingface and convert it into to a Dataset.
+    For this dataset, the SFT text is the preferred response.
+
+    Args:
+        - split: one of 'test', 'train'
+        - human_prefix: marks start of human turn ('<|user|>' is the recommended choice and is set in config.yaml)
+        - human_suffix: marks end of human turn ('' is the recommended choice and is set in config.yaml)
+        - assistant_prefix: marks start of human turn ('<|assistant|>' is the recommended choice and is set in config.yaml)
+        - assistant_suffix: marks end of human turn ('' is the recommended choice and is set in config.yaml)
+
+    Returns:   
+        A Dataset instance.
+    """
+    
+    data = Dataset('ultrabin')
+
+    #Example 1: Simple prompt with chosen/rejected responses
+    prompt1 = "<|user|>What is Python?<|assistant|>"
+    data[prompt1].prompt = prompt1
+    data[prompt1].generations = [
+        "Python is a high-level programming language known for its readability.<|assistant|>",
+        "Python is just a snake that programmers talk about.<|assistant|>"
+    ]
+    data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    data[prompt1].sft_index = 0     # First response is the best one
+    data[prompt1].dataset_name = 'ultrabin'
+    data[prompt1].truncation_mode = 'keep_start'
+    data[prompt1].remove_extra_spaces()
+
+    prompt1 = "3<|user|>What is Python?<|assistant|>"
+    data[prompt1].prompt = prompt1
+    data[prompt1].generations = [
+        "Python is a high-level programming language known for its readability.<|assistant|>",
+        "Python is just a snake that programmers talk about.<|assistant|>"
+    ]
+    data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    data[prompt1].sft_index = 0     # First response is the best one
+    data[prompt1].dataset_name = 'ultrabin'
+    data[prompt1].truncation_mode = 'keep_start'
+    data[prompt1].remove_extra_spaces()
+
+    
+    prompt1 = "2<|user|>What is Python?<|assistant|>"
+    data[prompt1].prompt = prompt1
+    data[prompt1].generations = [
+        "Python is a high-level programming language known for its readability.<|assistant|>",
+        "Python is just a snake that programmers talk about.<|assistant|>"
+    ]
+    data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    data[prompt1].sft_index = 0     # First response is the best one
+    data[prompt1].dataset_name = 'ultrabin'
+    data[prompt1].truncation_mode = 'keep_start'
+    data[prompt1].remove_extra_spaces()
+
+    
+    prompt1 = "4<|user|>What is Python?<|assistant|>"
+    data[prompt1].prompt = prompt1
+    data[prompt1].generations = [
+        "Python is a high-level programming language known for its readability.<|assistant|>",
+        "Python is just a snake that programmers talk about.<|assistant|>"
+    ]
+    data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    data[prompt1].sft_index = 0     # First response is the best one
+    data[prompt1].dataset_name = 'ultrabin'
+    data[prompt1].truncation_mode = 'keep_start'
+    data[prompt1].remove_extra_spaces()
+
+config.yaml
+eval_every: 20_000
+n_samples: 1 #128
+n_eval_examples: 2 #512
+reference_dtype: bfloat16
+max_grad_norm: 10.0
+v_head_max_grad_norm: 0.10
+max_length: 2048
+max_prompt_length: 1024
+activation_checkpointing: true
+batch_size: 32
+gradient_accumulation_steps: 1
+eval_batch_size: 2 # 16 # hanging for 16, work for 4
+use_flash_attention: false
+
+=======================================================
+eval_batch_size: 2,4,8 works; 16 not work
+
+
+
+### how to write readme
+https://github.com/eth-sri/sven
