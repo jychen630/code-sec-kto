@@ -25,6 +25,8 @@ from torch.nn.utils.rnn import pad_sequence
 from collections import defaultdict
 import tqdm
 import re
+import os
+import pickle
 import random
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
@@ -357,6 +359,110 @@ def get_ultrabin(split: str, human_prefix: str, human_suffix: str, assistant_pre
     Returns:   
         A Dataset instance.
     """
+    
+    data = Dataset('ultrabin')
+
+    # #Example 1: Simple prompt with chosen/rejected responses
+    # prompt1 = "<|user|>What is Python?<|assistant|>"
+    # data[prompt1].prompt = prompt1
+    # data[prompt1].generations = [
+    #     "Python is a high-level programming language known for its readability.<|assistant|>",
+    #     "Python is just a snake that programmers talk about.<|assistant|>"
+    # ]
+    # data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    # data[prompt1].sft_index = 0     # First response is the best one
+    # data[prompt1].dataset_name = 'ultrabin'
+    # data[prompt1].truncation_mode = 'keep_start'
+    # data[prompt1].remove_extra_spaces()
+
+    # prompt1 = "3<|user|>What is Python?<|assistant|>"
+    # data[prompt1].prompt = prompt1
+    # data[prompt1].generations = [
+    #     "Python is a high-level programming language known for its readability.<|assistant|>",
+    #     "Python is just a snake that programmers talk about.<|assistant|>"
+    # ]
+    # data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    # data[prompt1].sft_index = 0     # First response is the best one
+    # data[prompt1].dataset_name = 'ultrabin'
+    # data[prompt1].truncation_mode = 'keep_start'
+    # data[prompt1].remove_extra_spaces()
+
+    
+    # prompt1 = "2<|user|>What is Python?<|assistant|>"
+    # data[prompt1].prompt = prompt1
+    # data[prompt1].generations = [
+    #     "Python is a high-level programming language known for its readability.<|assistant|>",
+    #     "Python is just a snake that programmers talk about.<|assistant|>"
+    # ]
+    # data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    # data[prompt1].sft_index = 0     # First response is the best one
+    # data[prompt1].dataset_name = 'ultrabin'
+    # data[prompt1].truncation_mode = 'keep_start'
+    # data[prompt1].remove_extra_spaces()
+
+    
+    # prompt1 = "4<|user|>What is Python?<|assistant|>"
+    # data[prompt1].prompt = prompt1
+    # data[prompt1].generations = [
+    #     "Python is a high-level programming language known for its readability.<|assistant|>",
+    #     "Python is just a snake that programmers talk about.<|assistant|>"
+    # ]
+    # data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    # data[prompt1].sft_index = 0     # First response is the best one
+    # data[prompt1].dataset_name = 'ultrabin'
+    # data[prompt1].truncation_mode = 'keep_start'
+    # data[prompt1].remove_extra_spaces()
+    
+
+    # prompt1 = "5<|user|>What is Python?<|assistant|>"
+    # data[prompt1].prompt = prompt1
+    # data[prompt1].generations = [
+    #     "Python is a high-level programming language known for its readability.<|assistant|>",
+    #     "Python is just a snake that programmers talk about.<|assistant|>"
+    # ]
+    # data[prompt1].pairs = [(0, 1)]  # First response preferred over second
+    # data[prompt1].sft_index = 0     # First response is the best one
+    # data[prompt1].dataset_name = 'ultrabin'
+    # data[prompt1].truncation_mode = 'keep_start'
+    # data[prompt1].remove_extra_spaces()
+    # return data
+    
+    
+
+    # # Example 2: Prompt with scores
+    # prompt2 = "<|user|>Explain loops in Python<|assistant|>"
+    # data[prompt2].prompt = prompt2
+    # data[prompt2].generations = [
+    #     "A loop is a programming construct that repeats a block of code.<|assistant|>",
+    #     "Loops make code go round and round.<|assistant|>"
+    # ]
+    # data[prompt2].scores = [0.9, 0.3]  # Scores for each generation
+    # data[prompt2].pairs = [(0, 1)]     # First response preferred
+    # data[prompt2].sft_index = 0
+    # data[prompt2].dataset_name = 'ultrabin'
+    # data[prompt2].truncation_mode = 'keep_start'
+
+    # # Example 3: With unary feedback
+    # prompt3 = "<|user|>What is a function?<|assistant|>"
+    # data[prompt3].prompt = prompt3
+    # data[prompt3].generations = [
+    #     "A function is a reusable block of code that performs a specific task.<|assistant|>",
+    #     "Functions are like magic spells in programming.<|assistant|>"
+    # ]
+    # data[prompt3].desirable = [True, False]  # First response is desirable, second is not
+    # data[prompt3].sft_index = 0
+    # data[prompt3].dataset_name = 'ultrabin'
+    # data[prompt3].truncation_mode = 'keep_start'
+
+    cache_key = f"ultrabin_{split}_{hash(human_prefix + human_suffix + assistant_prefix + assistant_suffix)}"
+    cache_path = os.path.join('/local/nlp/junyao/dataset_cache', f'{cache_key}.pkl')
+    
+    # Try to load from cache
+    if os.path.exists(cache_path):
+        rank0_print(f"Loading cached Ultra Binarized dataset from {cache_path}")
+        with open(cache_path, 'rb') as f:
+            return pickle.load(f)
+        
     if split == 'train':
         split = 'train_prefs'
     elif split == 'test':
@@ -366,23 +472,46 @@ def get_ultrabin(split: str, human_prefix: str, human_suffix: str, assistant_pre
     
     rank0_print(f'Loading Ultra Binarized dataset ({split} split) from Huggingface...')
     dataset = datasets.load_dataset('HuggingFaceH4/ultrafeedback_binarized', split=split)
+
+
+
     if on_rank0():
         dataset = tqdm.tqdm(dataset, desc='Processing Ultrachat Binarized')
 
     data = Dataset('ultrabin')
+    for i, row in enumerate(dataset):
+        if i in range(15): continue
+        if i >= 16: break
+        # i in range(15) && i >= 50: problematic
+        # >= 15 is a serious problem
+        # if i >= 15: break
+        try:
+            prompt = human_prefix + row['prompt'] + human_suffix + assistant_prefix
+            responses = [row['chosen'][-1]['content'] + assistant_suffix, row['rejected'][-1]['content'] + assistant_suffix]
 
-    for row in dataset:
-        prompt = human_prefix + row['prompt'] + human_suffix + assistant_prefix
-        responses = [row['chosen'][-1]['content'] + assistant_suffix, row['rejected'][-1]['content'] + assistant_suffix]
-
-        i, j = data[prompt].num_generations(), data[prompt].num_generations() + 1
-        data[prompt].prompt = prompt
-        data[prompt].generations.extend(responses)
-        data[prompt].pairs.append((i, j))
-        data[prompt].sft_index = 0
-        data[prompt].dataset_name = data.name
-        data[prompt].truncation_mode = 'keep_start'
-        data[prompt].remove_extra_spaces()
+            i, j = data[prompt].num_generations(), data[prompt].num_generations() + 1
+            data[prompt].prompt = prompt
+            data[prompt].generations.extend(responses)
+            data[prompt].pairs.append((i, j))
+            data[prompt].sft_index = 0
+            data[prompt].dataset_name = data.name
+            data[prompt].truncation_mode = 'keep_start'
+            data[prompt].remove_extra_spaces()
+        except Exception as e:
+            with open("error.txt", "a") as f:
+                f.write('='*100)
+                f.write(str(row))
+                f.write('\n')
+                f.write((str(e)))
+                f.write('='*100)
+            continue
+    
+    # Cache the processed dataset
+    if on_rank0():
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        rank0_print(f"Caching processed dataset to {cache_path}")
+        with open(cache_path, 'wb') as f:
+            pickle.dump(data, f)
 
     return data
 
