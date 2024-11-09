@@ -90,6 +90,61 @@ class Dataset:
         return iter(self.data)
 
 
+def get_bigvul(split: str, human_prefix: str, human_suffix: str, assistant_prefix: str, assistant_suffix: str) -> Dataset:
+    # problem: Hangs at low number of examples like 15
+    # problem: block error at large number of examples
+    data = Dataset('bigvul')
+    data_path = "data.csv"
+    rank0_print(f'Loading BigVul dataset ({split} split) from {data_path}.')
+
+
+    # Define split ratios and seed inside function
+    RANDOM_SEED = 42
+    TRAIN_RATIO = 0.8
+    EVAL_RATIO = 0.1
+    # TEST_RATIO = 0.1 (remaining)
+    
+    # Read and shuffle with fixed seed
+    df = pd.read_csv(data_path)[:5]
+    df = df.sample(frac=1, random_state=RANDOM_SEED).reset_index(drop=True)
+    
+    # Calculate split indices
+    total_len = len(df)
+    train_idx = int(total_len * TRAIN_RATIO)
+    eval_idx = int(total_len * (TRAIN_RATIO + EVAL_RATIO))
+    
+    # Split based on specified split
+    if split == 'train':
+        df = df[:train_idx]
+    elif split == 'test':
+        df = df[train_idx:eval_idx]
+    elif split == 'sample':
+        df = df[eval_idx:]
+    else:
+        raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'test', 'sample']")
+    
+    rank0_print(f"Using {split} split with {len(df)} examples")
+
+
+    for _, row in df.iterrows():
+        if _ >= 2048: break
+        print(f"loading i = {_}", end='\r')
+        sub_prompt = "Fix the vulnerable code:"
+        prompt = human_prefix + sub_prompt + human_suffix + assistant_prefix
+        prompt = prompt[:20]
+        responses = [row['func_before'] + assistant_suffix, row['func_after'] + assistant_suffix]
+        i, j = data[prompt].num_generations(), data[prompt].num_generations() + 1
+        
+        data[prompt].prompt = prompt
+        data[prompt].generations.extend(responses)
+        data[prompt].pairs.append((i, j))
+        data[prompt].sft_index = 0
+        data[prompt].dataset_name = 'bigvul'
+        data[prompt].truncation_mode = 'keep_start'
+        data[prompt].remove_extra_spaces()
+    return data
+# todo: attach all oclumns
+
 def get_alpacaeval(split: str, human_prefix: str, human_suffix: str, assistant_prefix: str, assistant_suffix: str) -> Dataset:
     """
     Load the AlpacaEval dataset (for evaluation only) and convert it into to a Dataset.
