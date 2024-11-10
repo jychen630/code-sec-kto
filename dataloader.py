@@ -1000,13 +1000,40 @@ class UnpairedPreferenceDataLoader(DataLoader):
         return flat_data
 
     def __iter__(self):
+        print(f"\n=== Starting iterator initialization ===")
+        
+        # Get and shuffle prompts
         prompts = list(self.full_data.keys()) 
+        print(f"Number of unique prompts: {len(prompts)}")
+        print(f"Sample prompts (first 3): {prompts[:3] if prompts else 'No prompts'}")
+        
         random.shuffle(prompts) # otherwise, will be frontloaded with prompts in same domain
+        print("Prompts shuffled")
+        
+        # Get flat data
+        print(f"\nGetting flat data...")
         flat_data = self.get_flat_data(prompts)
+        print(f"Flat data size: {len(flat_data)}")
+        if flat_data:
+            print(f"Sample flat data entry:")
+            example, generation, status = flat_data[0]
+            print(f"- Example type: {type(example)}")
+            print(f"- Generation length: {len(generation)}")
+            print(f"- Status: {status}")
 
+        # Initialize counters
+        print(f"\nInitializing counters...")
         epoch_idx = 0
+        print(f"Starting epoch: {epoch_idx}")
         example_idx = 0
-        done = False
+        print(f"Starting example index: {example_idx}")
+        done = True if len(flat_data) == 0 else False
+        print(f"Initial done status: {done}")
+        
+        print(f"Batch size: {self.batch_size}")
+        print(f"N epochs: {self.n_epochs}")
+        print(f"N examples: {self.n_examples}")
+        print("=== Iterator initialization complete ===\n")
 
         while True:
             if done: break
