@@ -152,22 +152,22 @@ def main(config: DictConfig):
         )
     bnb_config_8bit = BitsAndBytesConfig(
         load_in_8bit=True,
-        llm_int8_threshold=6.0,
-        llm_int8_has_fp16_weight=True
+        #llm_int8_threshold=6.0, # create error
+        #llm_int8_has_fp16_weight=True
     )   
-    bnb_config = bnb_config_4bit 
+    bnb_config = None 
     model_class = AutoModelForCausalLMWithValueHead if config.loss.name == 'ppo' else AutoModelForCausalLM
     
     policy = model_class.from_pretrained(#quantization_config=bnb_config, 
         config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **policy_kwargs)
-    policy.gradient_checkpointing_enable() #  my change
+    #policy.gradient_checkpointing_enable() #  my change
     disable_dropout(policy)
 
     if config.loss.use_reference_model:
         print('building reference model')
         reference_model = AutoModelForCausalLM.from_pretrained(#quantization_config=bnb_config,
             config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **reference_kwargs)
-        reference_model.gradient_checkpointing_enable() # my change
+        #reference_model.gradient_checkpointing_enable() # my change
         disable_dropout(reference_model)
     else:
         reference_model = None
@@ -247,7 +247,7 @@ def main(config: DictConfig):
     )
     #os.environ["CUDA_VISIBLE_DEVICES"] = "0,3" # ineffective
     if config.use_fsdp:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "3,4,7"
+        #os.environ["CUDA_VISIBLE_DEVICES"] = "3,4,7"
         world_size = torch.cuda.device_count()
         print('starting', world_size, 'processes for FSDP training')
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
