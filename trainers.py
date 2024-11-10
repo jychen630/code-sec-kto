@@ -79,32 +79,80 @@ class BasicTrainer(object):
                  ):
         """A trainer for a language model, supporting either SFT, HALO, or offline PPO training.
         """
+        print('=== Starting trainer initialization ===')
+        
+        print('Setting seed...')
         self.seed = config.seed
+        print(f'Seed: {self.seed}')
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
         random.seed(self.seed)
+        print('Seeds set')
 
+        print('Setting up device info...')
         self.rank = rank
+        print(f'Rank: {self.rank}')
         self.device = torch.device('cuda', self.rank)
+        print(f'Device: {self.device}')
         self.world_size = world_size
+        print(f'World size: {self.world_size}')
+        
+        print('Setting up config...')
         self.config = config
+        print(f'Run directory: {config.local_run_dir}')
         self.run_dir = config.local_run_dir
         self.fsdp = fsdp
+        print(f'FSDP enabled: {self.fsdp}')
 
+        print('Setting up models...')
         self.tokenizer = tokenizer
+        print(f'Tokenizer loaded: {type(tokenizer)}')
         self.policy = policy
+        print(f'Policy model loaded: {type(policy)}')
         self.policy_dtype = getattr(torch, config.model.policy_dtype)
+        print(f'Policy dtype: {self.policy_dtype}')
         self.reference_model = reference_model
+        print(f'Reference model loaded: {type(reference_model) if reference_model else None}')
+        
+        print('Setting up counters...')
         self.example_counter = 0
         self.batch_counter = 0
+        print(f'Counters initialized: example={self.example_counter}, batch={self.batch_counter}')
 
+        print('Setting up iterators...')
         self.train_iterator = train_iterator
+        print(f'Train iterator type: {type(train_iterator)}')
         self.eval_iterator = eval_iterator
-        self.eval_batches = list(self.eval_iterator)
-        rank0_print(f'Loaded {len(self.eval_batches)} eval batches of size {config.model.eval_batch_size}')
+        print(f'Eval iterator type: {type(eval_iterator)}')
+        
+        print('Loading eval batches...')
+        try:
+            # Collect batches properly from the iterator
+            self.eval_batches = []
+            for batch in self.eval_iterator:
+                self.eval_batches.append(batch)
+                print(f'Loaded eval batch, size: {len(batch) if batch else 0}')
+
+            #self.eval_batches = list(self.eval_iterator)
+            print(f'Successfully loaded {len(self.eval_batches)} eval batches')
+            print(f'First batch keys: {list(self.eval_batches[0].keys()) if self.eval_batches else "No batches"}')
+            print(f'Eval batch size from config: {config.model.eval_batch_size}')
+            rank0_print(f'Loaded {len(self.eval_batches)} eval batches of size {config.model.eval_batch_size}')
+        except Exception as e:
+            print(f'Error loading eval batches: {str(e)}')
+            raise
 
         if self.fsdp:
-            self.shard()
+            print('Starting FSDP sharding...')
+            try:
+                self.shard()
+                print('Successfully completed FSDP sharding')
+            except Exception as e:
+                print(f'Error during sharding: {str(e)}')
+                raise
+            print('Done sharding')
+        
+        print('=== Trainer initialization complete ===')
 
         self.is_mistral = 'mistral' in self.config.model.name_or_path.lower()
         
