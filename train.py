@@ -77,8 +77,9 @@ def worker_main(rank: int, world_size: int, config: DictConfig, tokenizer: AutoT
         world_size=world_size, 
         fsdp=config.use_fsdp,
     )
-
+    print('Done trainer creation')
     trainer.train()
+    print('Done training, saving....')
     trainer.save()
     
 
