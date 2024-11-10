@@ -144,3 +144,12 @@ batch_size: 4, eval_batch_size: 4 solve cuda out of memory error for codellama7b
 
 20min, 400 examples, 2 gpus
 16000 examples -> 14 hours
+
+
+pip default package installation
+# method1 
+pip install --target=/local/nlp/junyao/code-sec/packages pyfiglet
+
+# method2
+export PYTHONPATH=/local/nlp/junyao/code-sec/packages:$PYTHONPATH
+pip install --prefix=/local/nlp/junyao/code-sec pyfiglet
