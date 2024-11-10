@@ -105,7 +105,7 @@ def get_bigvul(split: str, human_prefix: str, human_suffix: str, assistant_prefi
     # TEST_RATIO = 0.1 (remaining)
     
     # Read and shuffle with fixed seed
-    df = pd.read_csv(data_path)[:256]
+    df = pd.read_csv(data_path)
     df = df.sample(frac=1, random_state=RANDOM_SEED).reset_index(drop=True)
     
     # Calculate split indices
