@@ -128,3 +128,19 @@ eval_batch_size: 2,4,8 works; 16 not work
 
 ### how to write readme
 https://github.com/eth-sri/sven
+
+
+export CUDA_VISIBLE_DEVICES to env var in train.sh works; but not in train.py using os.environ["CUDA_VISIBLE_DEVICES"]
+
+
+pickle err: https://discuss.huggingface.co/t/cant-pickle-error-using-accelerate-multi-gpu/32358/4
+
+
+using quantization_config=None (i.e 16bits) works so that forward pickle error is not triggered
+but cuda out of memory
+
+
+batch_size: 4, eval_batch_size: 4 solve cuda out of memory error for codellama7b
+
+20min, 400 examples, 2 gpus
+16000 examples -> 14 hours
