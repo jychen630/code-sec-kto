@@ -144,3 +144,52 @@ batch_size: 4, eval_batch_size: 4 solve cuda out of memory error for codellama7b
 
 20min, 400 examples, 2 gpus
 16000 examples -> 14 hours
+
+
+pip default package installation
+# method1 
+pip install --target=/local/nlp/junyao/code-sec/packages pyfiglet
+
+# method2
+export PYTHONPATH=/local/nlp/junyao/code-sec/packages:$PYTHONPATH
+pip install --prefix=/local/nlp/junyao/code-sec pyfiglet
+
+# copy paste the following in the terminal. dont just ./greene.sh
+export PATH="/scratch/jc9723/miniconda3/bin:$PATH"
+conda init
+source /scratch/jc9723/miniconda3/etc/profile.d/conda.sh
+source activate code-sec
+conda activate code-sec # not recommended, and not leveraging packages installled
+
+
+## install packgaes
+# CUDA setup
+export CUDA_HOME=/usr/local/cuda  # adjust this path to your CUDA installation
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+
+tmux new -t test
+
+
+# launch srun interactive session
+srun --gres=gpu:1 --mem=48GB --time=48:00:00 --account=pr_177_general --pty bash
+
+
+mv default hugginface token storage to your large-disk storage
+
+mv /home/jc9723/.cache/huggingface/token /scratch/jc9723/huggingface/token
+
+using srun to configure env.
+then request sbatch 
+
+
+remembert o laod all data
+
+remember to increate eval batch size from 2 to 32 (originally 128 & 512)
+
+
+distributed training sigsegv:
+https://discuss.pytorch.org/t/how-to-fix-a-sigsegv-in-pytorch-when-using-distributed-training-e-g-ddp/113518
+
+
+srun --gres=gpu:a100:1 --mem=80GB --nodes=1 --time=48:00:00 --account=pr_177_general --pty bash

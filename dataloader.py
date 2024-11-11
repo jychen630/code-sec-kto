@@ -105,7 +105,7 @@ def get_bigvul(split: str, human_prefix: str, human_suffix: str, assistant_prefi
     # TEST_RATIO = 0.1 (remaining)
     
     # Read and shuffle with fixed seed
-    df = pd.read_csv(data_path)[:256]
+    df = pd.read_csv(data_path)[:2048]
     df = df.sample(frac=1, random_state=RANDOM_SEED).reset_index(drop=True)
     
     # Calculate split indices
@@ -127,8 +127,7 @@ def get_bigvul(split: str, human_prefix: str, human_suffix: str, assistant_prefi
 
 
     for _, row in df.iterrows():
-        if _ >= 2048: break
-        print(f"loading i = {_}", end='\r')
+        if _ % 10 == 0: print(f"loading i = {_}", end='\r')
         sub_prompt = "Fix the vulnerable code:"
         prompt = human_prefix + sub_prompt + human_suffix + assistant_prefix
         responses = [row['func_before'] + assistant_suffix, row['func_after'] + assistant_suffix]

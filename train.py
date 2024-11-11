@@ -139,8 +139,8 @@ def main(config: DictConfig):
     reference_kwargs = {'torch_dtype' : getattr(torch, config.model.reference_dtype)}
     
     if not config.use_fsdp:
-        policy_kwargs['device_map'] = 'balanced'
-        reference_kwargs['device_map'] = 'balanced'
+        policy_kwargs['device_map'] = 'auto'
+        reference_kwargs['device_map'] = 'auto'
 
     print('building policy')
     bnb_config_4bit = BitsAndBytesConfig(
@@ -160,14 +160,24 @@ def main(config: DictConfig):
     model_class = AutoModelForCausalLMWithValueHead if config.loss.name == 'ppo' else AutoModelForCausalLM
     
     policy = model_class.from_pretrained(#quantization_config=bnb_config, 
-        config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **policy_kwargs)
+        config.model.name_or_path,
+        low_cpu_mem_usage=True, 
+        quantization_config=bnb_config, 
+        use_flash_attention_2=config.model.use_flash_attention, 
+        **policy_kwargs
+    )
     #policy.gradient_checkpointing_enable() #  my change
     disable_dropout(policy)
 
     if config.loss.use_reference_model:
         print('building reference model')
         reference_model = AutoModelForCausalLM.from_pretrained(#quantization_config=bnb_config,
-            config.model.name_or_path, low_cpu_mem_usage=True, quantization_config=bnb_config, use_flash_attention_2=config.model.use_flash_attention, **reference_kwargs)
+            config.model.name_or_path,
+            low_cpu_mem_usage=True,
+            quantization_config=bnb_config,
+            use_flash_attention_2=config.model.use_flash_attention,
+            **reference_kwargs
+        )
         #reference_model.gradient_checkpointing_enable() # my change
         disable_dropout(reference_model)
     else:
