@@ -193,3 +193,22 @@ https://discuss.pytorch.org/t/how-to-fix-a-sigsegv-in-pytorch-when-using-distrib
 
 
 srun --gres=gpu:a100:1 --mem=80GB --nodes=1 --time=48:00:00 --account=pr_177_general --pty bash
+
+
+
+## check block name
+### starcoder
+import inspect
+from transformers.models.gpt_bigcode import GPTBigCodeModel
+print(inspect.getsource(GPTBigCodeModel))
+>>> GPTBigCodeBlock
+
+### phi2
+import inspect
+from transformers.models.phi import PhiModel
+print(inspect.getsource(PhiModel))
+>>> PhiDecoderLayer
+
+
+### codellama7b
+>>> LlamaDecoderLayer
