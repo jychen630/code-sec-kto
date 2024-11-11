@@ -51,6 +51,7 @@ from utils import (
     entropy_from_logits,
     delete_dict,
     rowwise_product,
+    extend_or_append_float_to_dict,
 )
 import numpy as np
 import wandb
@@ -307,7 +308,7 @@ class BasicTrainer(object):
                 _, eval_metrics = self.get_batch_metrics(local_eval_batch, mode='eval')
 
             for k, v in eval_metrics.items():
-                all_eval_metrics[k].extend(v)
+                extend_or_append_float_to_dict(all_eval_metrics, k, v)
 
         mean_eval_metrics = {}
         for k, v in all_eval_metrics.items():
@@ -410,7 +411,7 @@ class BasicTrainer(object):
                         _, eval_metrics = self.get_batch_metrics(local_eval_batch, mode='eval')
 
                     for k, v in eval_metrics.items():
-                        all_eval_metrics[k].extend(v)
+                        extend_or_append_float_to_dict(all_eval_metrics, k, v)
 
                     delete_dict(local_eval_batch)
 
@@ -444,7 +445,7 @@ class BasicTrainer(object):
             (loss / self.config.model.gradient_accumulation_steps).backward()
 
             for k, v in metrics.items():
-                batch_metrics[k].extend(v)
+                extend_or_append_float_to_dict(batch_metrics, k, v)
 
             gradients_accumulated += 1
             
@@ -1301,7 +1302,7 @@ class PPOTrainer(BasicTrainer):
                 loss, local_batch_metrics = self.get_batch_metrics(global_sbatch_dict, batch_size, mode='train')
 
                 for k,v in local_batch_metrics.items():
-                    batch_metrics[k].extend(v)
+                    extend_or_append_float_to_dict(batch_metrics, k, v)
 
                 (loss / (self.config.model.gradient_accumulation_steps)).backward()
                 gradients_accumulated += 1
