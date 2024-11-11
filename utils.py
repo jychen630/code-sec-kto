@@ -270,3 +270,10 @@ def init_distributed(rank: int, world_size: int, master_addr: str = 'localhost',
     os.environ["CUDA_VISIBLE_DEVICES"] = str(rank)
     torch.cuda.set_device(rank)
     dist.init_process_group(backend, rank=rank, world_size=world_size)
+
+def extend_or_append_float_to_dict(d: Dict, k: str, v: Union[float, List]):
+    if isinstance(v, float):
+        # https://github.com/pytorch/pytorch/issues/52262
+        d[k].extend([v])
+    else:
+        d[k].extend(v)
