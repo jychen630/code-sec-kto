@@ -38,7 +38,7 @@ do_first_eval: true
 # prevent wandb from logging more than once per minimum_log_interval_secs
 minimum_log_interval_secs: 1.0
 
-intermediate_checkpoints: false
+intermediate_checkpoints: true
 
 defaults:
 - _self_
