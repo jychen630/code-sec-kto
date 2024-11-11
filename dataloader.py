@@ -127,7 +127,6 @@ def get_bigvul(split: str, human_prefix: str, human_suffix: str, assistant_prefi
 
 
     for _, row in df.iterrows():
-        if _ >= 2048: break
         print(f"loading i = {_}", end='\r')
         sub_prompt = "Fix the vulnerable code:"
         prompt = human_prefix + sub_prompt + human_suffix + assistant_prefix
