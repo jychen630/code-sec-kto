@@ -1,8 +1,8 @@
 defaults:
   - base_model
 
-name_or_path: bigcode/starcoder
+name_or_path: bigcode/starcoderbase
 
 block_name: GPTBigCodeBlock
-use_flash_attention: false
-use_fsdp: false
+use_flash_attention: true
+use_fsdp: true
