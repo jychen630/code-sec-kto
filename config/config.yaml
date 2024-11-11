@@ -38,7 +38,7 @@ do_first_eval: true
 # prevent wandb from logging more than once per minimum_log_interval_secs
 minimum_log_interval_secs: 1.0
 
-intermediate_checkpoints: false
+intermediate_checkpoints: true
 
 defaults:
 - _self_
@@ -67,19 +67,19 @@ optimizer: RMSprop
 warmup_steps: 150
 
 # evaluate and save model every eval_every steps
-eval_every: 20_000
+eval_every: 200
 
 
 ### EVALUATION SETTINGS
 
 # how many model samples to generate during sampling
-n_samples: 1 #128
+n_samples: 64 #128
 
 # where to dump samples
 samples_dir: "samples/"
 
 # the number of examples to evaluate on (leave as null to evaluate on all of them)
-n_eval_examples: 2 #512
+n_eval_examples: 32 #512
 
 # where the aligned policy model is stored
 saved_policy: null

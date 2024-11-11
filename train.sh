@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
-export CUDA_VISIBLE_DEVICES=4,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export HYDRA_FULL_ERROR=1
 
 # debug for FSDP (Fully Sharded Data Parallel)
@@ -17,9 +17,9 @@ export FSDP_BACKWARD_PREFETCH=BACKWARD_POST
 export FSDP_CPU_OFFLOAD=true
 
 # huggingface cache dir
-export TRANSFORMERS_CACHE="/local/nlp/junyao/huggingface"
-export HF_HOME="/local/nlp/junyao/huggingface"
-export HF_DATASETS_CACHE="/local/nlp/junyao/huggingface"
+export TRANSFORMERS_CACHE="/scratch/jc9723/huggingface"
+export HF_HOME="/scratch/jc9723/huggingface"
+export HF_DATASETS_CACHE="/scratch/jc9723/huggingface"
 
 timestamp=$(date +"%Y%m%d_%H%M%S")
 model="codellama7b"
@@ -30,4 +30,4 @@ python train.py \
     model=${model} \
     datasets=[bigvul] \
     ++exp_name="${timestamp}_${model}_${comment}" \
-    ++cache_dir=/local/nlp/junyao/huggingface \
+    ++cache_dir=/scratch/jc9723/huggingface \
