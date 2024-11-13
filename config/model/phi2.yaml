@@ -4,5 +4,5 @@ defaults:
 name_or_path: microsoft/phi-2
 
 block_name: PhiDecoderLayer
-use_flash_attention: true
+use_flash_attention: false
 use_fsdp: true
