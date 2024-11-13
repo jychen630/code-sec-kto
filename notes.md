@@ -212,3 +212,8 @@ print(inspect.getsource(PhiModel))
 
 ### codellama7b
 >>> LlamaDecoderLayer
+
+
+## transformers version
+codellama7b, starcoderbase: transformers==4.35.2
+phi2: transformers==4.37.0
