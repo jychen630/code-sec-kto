@@ -172,7 +172,7 @@ tmux new -t test
 
 
 # launch srun interactive session
-srun --gres=gpu:1 --mem=48GB --time=48:00:00 --account=pr_177_general --pty bash
+srun --gres=gpu:a100:1 --mem=100GB --time=48:00:00 --account=pr_177_general --pty bash
 
 
 mv default hugginface token storage to your large-disk storage
@@ -217,3 +217,6 @@ print(inspect.getsource(PhiModel))
 ## transformers version
 codellama7b, starcoderbase: transformers==4.35.2
 phi2: transformers==4.37.0
+
+starcoder-1b + full dataset (instead of 2048) -> wait so long to get the very inital batch (will hangs after exporte cuda env var)
+just hoping not wait too long that GPU was deemed idle and killed

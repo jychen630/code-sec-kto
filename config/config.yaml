@@ -67,7 +67,7 @@ optimizer: RMSprop
 warmup_steps: 150
 
 # evaluate and save model every eval_every steps
-eval_every: 200
+eval_every: 5000
 
 
 ### EVALUATION SETTINGS

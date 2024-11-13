@@ -22,7 +22,7 @@ export HF_HOME="/scratch/jc9723/huggingface"
 export HF_DATASETS_CACHE="/scratch/jc9723/huggingface"
 
 timestamp=$(date +"%Y%m%d_%H%M%S")
-model="codellama7b"
+model="starcoder"
 comment=""
 
 python train.py \

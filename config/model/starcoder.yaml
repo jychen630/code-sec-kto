@@ -4,5 +4,5 @@ defaults:
 name_or_path: bigcode/starcoderbase-1b
 
 block_name: GPTBigCodeBlock
-use_flash_attention: true
+use_flash_attention: false
 use_fsdp: true
