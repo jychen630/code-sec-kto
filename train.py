@@ -265,6 +265,15 @@ def main(config: DictConfig):
         resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
         print(f'setting RLIMIT_NOFILE soft limit to {hard} from {soft}')
         mp.spawn(worker_main, nprocs=world_size, args=(world_size, config, tokenizer, train_iterator, eval_iterator, policy, reference_model), join=True)
+        # ineffective 
+        # children = []
+        # for i in range(world_size):
+        #     subproc = mp.Process(target=run, args=(i, world_size, config, tokenizer, train_iterator, eval_iterator, policy, reference_model))
+        #     children.append(subproc)
+        #     subproc.start()
+        # for i in range(world_size):
+        #     children[i].join()
+
     else:
         print('starting single-process worker')
         worker_main(0, 1, config, tokenizer, train_iterator, eval_iterator, policy, reference_model)
