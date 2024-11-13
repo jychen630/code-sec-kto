@@ -1,68 +1,43 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
 import json
-from datetime import datetime
-
+import datetime
 # Paths and settings
-model_path = "/local/nlp/junyao/huggingface/20241110_072946_codellama7b_/LATEST/policy.pt"
-base_model_name = "codellama/CodeLlama-7b-hf"
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-
-# Load tokenizer
+model_path = "/scratch/jc9723/huggingface/20241111_044108_starcoder_/LATEST/policy.pt"
+base_model_name = "bigcode/starcoderbase-1b"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,3,4,7"
+# Load tokenizer and models
 print("Loading tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 tokenizer.pad_token = tokenizer.eos_token
 print("Tokenizer loaded.")
 
-# First load the state dict
-print("Loading state dict...")
-state_dict = torch.load(model_path, map_location='cpu')
-
-# Load the base model without quantization first
+# Load fine-tuned model
 print("Loading base model...")
 model = AutoModelForCausalLM.from_pretrained(base_model_name)
-print("Loading state dict into model...")
+
+state_dict = torch.load(model_path)
+print("Fine-tuned model state_dict loaded.")
+print("Attaching fine-tuned state_dict to base model...")
 model.load_state_dict(state_dict['state'])
-
-# Now quantize the loaded model
-print("Quantizing model...")
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
-)
-
-model = AutoModelForCausalLM.from_pretrained(
-    base_model_name,
-    quantization_config=bnb_config,
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True,
-)
-
-# Load base model for comparison with same quantization
-print("Loading base model for comparison...")
-base_model = AutoModelForCausalLM.from_pretrained(
-    base_model_name,
-    quantization_config=bnb_config,
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True,
-)
-
-print("Setting models to evaluation mode...")
+print("Attached fine-tuned state_dict to base model.")
+print("Setting fine-tuned model to evaluation mode...")
 model.eval()
-base_model.eval()
-print("Models ready for inference.")
+print("Fine-tuned model set to evaluation mode.")
+print("Moving fine-tuned model to GPU...")
+model.cuda()
+print("Fine-tuned model moved to GPU.")
+print("="*80)
+
+# Load base model for comparison
+print("Loading base model for comparison...")
+base_model = AutoModelForCausalLM.from_pretrained(base_model_name).cuda()
+print("Base model loaded (for comparison).")
 
 def generate_response(prompt, model, max_length=512):
     inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
-    # Get the device of the first parameter of the model
-    device = next(model.parameters()).device
-    inputs = {k: v.to(device) for k, v in inputs.items()}
+    inputs = {k: v.cuda() for k, v in inputs.items()}
     
     outputs = model.generate(
         **inputs,
@@ -83,7 +58,7 @@ def save_response(response_dir, filename, content):
     with open(os.path.join(response_dir, filename), 'w') as f:
         json.dump(content, f, indent=2)
 
-def compare_responses(prompt, response_dir="responses/codellama"):
+def compare_responses(prompt, response_dir="responses/starcoder"):
     # Create timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
@@ -130,6 +105,7 @@ def compare_responses(prompt, response_dir="responses/codellama"):
     print(f"\nResponses saved to {response_dir}/response_{timestamp}.json")
     print(f"Cumulative responses updated in {cumulative_file}")
 
+
 # Test examples
 test_prompts = [
     """int calculateSum(int numbers[], int size) {
@@ -137,27 +113,18 @@ test_prompts = [
     
     }""",
     
-    """Write a secure password validation function in c/c++""",
+    """Write a secure password validation function""",
     
     """// Create a function to check if a string is a valid email
 bool validateEmail(const char* email) {
     
 }""",
 ]
-
-# Create response directory with model name and timestamp
-base_dir = f"responses/codellama_{datetime.now().strftime('%Y%m%d')}"
-
+# Interactive testing loop
 print("\nStarting with test examples...")
 for prompt in test_prompts:
-    compare_responses(prompt, base_dir)
+    compare_responses(prompt)
 
-print("\nEntering interactive mode...")
-while True:
-    user_input = input("\nEnter your prompt (or 'quit' to exit): ")
-    if user_input.lower() == 'quit':
-        break
-    
-    compare_responses(user_input, base_dir)
+
 
 print("\nTesting completed!")
