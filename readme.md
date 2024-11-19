@@ -84,7 +84,7 @@ python print_results.py --eval_name $model --eval_type trained-new-c-only --deta
 
 
 An example output from the `print_results.py` script is shown below:
-
+```
 |     cwe |   scenario |   sec_rate |   sec |   total |   non_parsed |
 |---------+------------+------------+-------+---------+--------------|
 | cwe-119 |        0-c |        100 |    94 |      94 |            6 |
@@ -94,7 +94,7 @@ An example output from the `print_results.py` script is shown below:
 | cwe-732 |        0-c |        100 |    70 |      70 |           30 |
 | cwe-732 |        1-c |        100 |    42 |      42 |           58 |
 | overall |            |        100 |   452 |     452 |          148 |
-
+```
 
 ## Acknowledgements
 This repo draws from the excellently written [KTO repo](https://github.com/ContextualAI/HALOs) and has preserved many design choices from the original.
